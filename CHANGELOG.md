@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Bug Fixes
 
 - Fix verification (data and signature arguments were in incorrect order).
+- Serialize JWKs through serde_json to retain `kty` field.
 
 ## [0.1.0] - 2026-03-24
 
