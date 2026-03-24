@@ -41,8 +41,8 @@ pub async fn verify_with_key(
             .verify_with_object_and_u8_array_and_u8_array(
                 &sign_algorithm_js.into(),
                 key,
-                data,
                 signature,
+                data,
             )
             .context(VerifySnafu)?,
     )
