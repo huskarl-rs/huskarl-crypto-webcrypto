@@ -2,6 +2,7 @@
 name = "huskarl-crypto-webcrypto"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.92"
 description = "WebCrypto support for huskarl (OAuth2 client) ecosystem."
 repository = "https://github.com/huskarl-rs/huskarl-crypto-webcrypto"
 license = "MIT OR Apache-2.0"
