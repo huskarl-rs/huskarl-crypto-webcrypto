@@ -338,6 +338,7 @@ dependencies = [
  "serde",
  "serde-wasm-bindgen",
  "serde_bytes",
+ "serde_json",
  "snafu",
  "wasm-bindgen",
  "wasm-bindgen-futures 0.4.64",
