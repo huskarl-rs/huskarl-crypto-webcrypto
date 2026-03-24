@@ -160,44 +160,32 @@ impl Key {
                 ps384: create_rsa_key(&crypto, "RSA-PSS", "SHA-384", &jwk).await?,
                 ps512: create_rsa_key(&crypto, "RSA-PSS", "SHA-512", &jwk).await?,
             }),
-            jwk::PublicKey::Rsa(_)
-                if jwk.algorithm.as_ref().is_some_and(|alg| alg == "RS256") =>
-            {
+            jwk::PublicKey::Rsa(_) if jwk.algorithm.as_ref().is_some_and(|alg| alg == "RS256") => {
                 Some(Key::Rs256(
                     create_rsa_key(&crypto, "RSASSA-PKCS1-v1_5", "SHA-256", &jwk).await?,
                 ))
             }
-            jwk::PublicKey::Rsa(_)
-                if jwk.algorithm.as_ref().is_some_and(|alg| alg == "RS384") =>
-            {
+            jwk::PublicKey::Rsa(_) if jwk.algorithm.as_ref().is_some_and(|alg| alg == "RS384") => {
                 Some(Key::Rs384(
                     create_rsa_key(&crypto, "RSASSA-PKCS1-v1_5", "SHA-384", &jwk).await?,
                 ))
             }
-            jwk::PublicKey::Rsa(_)
-                if jwk.algorithm.as_ref().is_some_and(|alg| alg == "RS512") =>
-            {
+            jwk::PublicKey::Rsa(_) if jwk.algorithm.as_ref().is_some_and(|alg| alg == "RS512") => {
                 Some(Key::Rs512(
                     create_rsa_key(&crypto, "RSASSA-PKCS1-v1_5", "SHA-512", &jwk).await?,
                 ))
             }
-            jwk::PublicKey::Rsa(_)
-                if jwk.algorithm.as_ref().is_some_and(|alg| alg == "PS256") =>
-            {
+            jwk::PublicKey::Rsa(_) if jwk.algorithm.as_ref().is_some_and(|alg| alg == "PS256") => {
                 Some(Key::Ps256(
                     create_rsa_key(&crypto, "RSA-PSS", "SHA-256", &jwk).await?,
                 ))
             }
-            jwk::PublicKey::Rsa(_)
-                if jwk.algorithm.as_ref().is_some_and(|alg| alg == "PS384") =>
-            {
+            jwk::PublicKey::Rsa(_) if jwk.algorithm.as_ref().is_some_and(|alg| alg == "PS384") => {
                 Some(Key::Ps384(
                     create_rsa_key(&crypto, "RSA-PSS", "SHA-384", &jwk).await?,
                 ))
             }
-            jwk::PublicKey::Rsa(_)
-                if jwk.algorithm.as_ref().is_some_and(|alg| alg == "PS512") =>
-            {
+            jwk::PublicKey::Rsa(_) if jwk.algorithm.as_ref().is_some_and(|alg| alg == "PS512") => {
                 Some(Key::Ps512(
                     create_rsa_key(&crypto, "RSA-PSS", "SHA-512", &jwk).await?,
                 ))
@@ -228,33 +216,78 @@ impl Key {
 
     fn matching_key_and_alg(&self, alg: &str) -> Option<(SignAlgorithm<'static>, &CryptoKey)> {
         match self {
-            Key::Es256(k) if alg == "ES256" => {
-                Some((SignAlgorithm::EcDsa { name: "ECDSA", hash: "SHA-256" }, k))
-            }
-            Key::Es384(k) if alg == "ES384" => {
-                Some((SignAlgorithm::EcDsa { name: "ECDSA", hash: "SHA-384" }, k))
-            }
-            Key::Rsa { rs256, rs384, rs512, ps256, ps384, ps512 } => match alg {
+            Key::Es256(k) if alg == "ES256" => Some((
+                SignAlgorithm::EcDsa {
+                    name: "ECDSA",
+                    hash: "SHA-256",
+                },
+                k,
+            )),
+            Key::Es384(k) if alg == "ES384" => Some((
+                SignAlgorithm::EcDsa {
+                    name: "ECDSA",
+                    hash: "SHA-384",
+                },
+                k,
+            )),
+            Key::Rsa {
+                rs256,
+                rs384,
+                rs512,
+                ps256,
+                ps384,
+                ps512,
+            } => match alg {
                 "RS256" => Some((SignAlgorithm::RsaPkcs1, rs256)),
                 "RS384" => Some((SignAlgorithm::RsaPkcs1, rs384)),
                 "RS512" => Some((SignAlgorithm::RsaPkcs1, rs512)),
-                "PS256" => Some((SignAlgorithm::RsaPss { name: "RSA-PSS", salt_length: 32 }, ps256)),
-                "PS384" => Some((SignAlgorithm::RsaPss { name: "RSA-PSS", salt_length: 48 }, ps384)),
-                "PS512" => Some((SignAlgorithm::RsaPss { name: "RSA-PSS", salt_length: 64 }, ps512)),
+                "PS256" => Some((
+                    SignAlgorithm::RsaPss {
+                        name: "RSA-PSS",
+                        salt_length: 32,
+                    },
+                    ps256,
+                )),
+                "PS384" => Some((
+                    SignAlgorithm::RsaPss {
+                        name: "RSA-PSS",
+                        salt_length: 48,
+                    },
+                    ps384,
+                )),
+                "PS512" => Some((
+                    SignAlgorithm::RsaPss {
+                        name: "RSA-PSS",
+                        salt_length: 64,
+                    },
+                    ps512,
+                )),
                 _ => None,
             },
             Key::Rs256(k) if alg == "RS256" => Some((SignAlgorithm::RsaPkcs1, k)),
             Key::Rs384(k) if alg == "RS384" => Some((SignAlgorithm::RsaPkcs1, k)),
             Key::Rs512(k) if alg == "RS512" => Some((SignAlgorithm::RsaPkcs1, k)),
-            Key::Ps256(k) if alg == "PS256" => {
-                Some((SignAlgorithm::RsaPss { name: "RSA-PSS", salt_length: 32 }, k))
-            }
-            Key::Ps384(k) if alg == "PS384" => {
-                Some((SignAlgorithm::RsaPss { name: "RSA-PSS", salt_length: 48 }, k))
-            }
-            Key::Ps512(k) if alg == "PS512" => {
-                Some((SignAlgorithm::RsaPss { name: "RSA-PSS", salt_length: 64 }, k))
-            }
+            Key::Ps256(k) if alg == "PS256" => Some((
+                SignAlgorithm::RsaPss {
+                    name: "RSA-PSS",
+                    salt_length: 32,
+                },
+                k,
+            )),
+            Key::Ps384(k) if alg == "PS384" => Some((
+                SignAlgorithm::RsaPss {
+                    name: "RSA-PSS",
+                    salt_length: 48,
+                },
+                k,
+            )),
+            Key::Ps512(k) if alg == "PS512" => Some((
+                SignAlgorithm::RsaPss {
+                    name: "RSA-PSS",
+                    salt_length: 64,
+                },
+                k,
+            )),
             Key::Ed25519(k) if ["EdDSA", "Ed25519"].contains(&alg) => {
                 Some((SignAlgorithm::Ed25519, k))
             }
