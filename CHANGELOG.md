@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changes
+
+- Breaking: Update to huskarl-core 0.2.
+
 ### Bug Fixes
 
 - Fix verification (data and signature arguments were in incorrect order).
