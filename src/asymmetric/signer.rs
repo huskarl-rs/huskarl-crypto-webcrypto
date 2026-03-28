@@ -22,9 +22,8 @@ use std::sync::Arc;
 
 use web_sys::CryptoKey;
 
-use huskarl_core::{
-    crypto::signer::{HasPublicKey, JwsSigningKey, SigningKeyMetadata},
-    jwk,
+use huskarl_core::crypto::signer::{
+    AsymmetricJwsSigningKey, AsymmetricSigningKeyMetadata, SigningKeyMetadata,
 };
 
 use crate::{
@@ -39,8 +38,7 @@ use crate::{
 struct PrivateKeyInner {
     crypto_key: CryptoKey,
     algorithm: AsymmetricAlgorithm,
-    key_metadata: SigningKeyMetadata,
-    jwk: jwk::PublicJwk,
+    key_metadata: AsymmetricSigningKeyMetadata,
 }
 
 /// A non-exportable asymmetric private key used to create JWS signatures.
@@ -269,11 +267,13 @@ impl PrivateKey {
             inner: Arc::new(PrivateKeyInner {
                 crypto_key: key_pair.get_private_key(),
                 algorithm,
-                key_metadata: SigningKeyMetadata {
-                    jws_algorithm: algorithm.name().to_string(),
-                    key_id: public_key_jwk.kid.clone(),
+                key_metadata: AsymmetricSigningKeyMetadata {
+                    key_metadata: SigningKeyMetadata {
+                        jws_algorithm: algorithm.name().to_string(),
+                        key_id: public_key_jwk.kid.clone(),
+                    },
+                    public_key: public_key_jwk,
                 },
-                jwk: public_key_jwk,
             }),
         })
     }
@@ -305,14 +305,16 @@ impl huskarl_core::Error for SignError {
     }
 }
 
-impl JwsSigningKey for PrivateKey {
+impl AsymmetricJwsSigningKey for PrivateKey {
     type Error = SignError;
 
-    fn key_metadata(&self) -> Cow<'_, SigningKeyMetadata> {
+    fn asymmetric_key_metadata(
+        &self,
+    ) -> Cow<'_, huskarl_core::crypto::signer::AsymmetricSigningKeyMetadata> {
         Cow::Borrowed(&self.inner.key_metadata)
     }
 
-    async fn sign_unchecked(&self, input: &[u8]) -> Result<Vec<u8>, Self::Error> {
+    async fn sign_asymmetric_unchecked(&self, input: &[u8]) -> Result<Vec<u8>, Self::Error> {
         let crypto = get_crypto().context(CryptoAbsentSnafu)?;
 
         sign_with_key(
@@ -323,11 +325,5 @@ impl JwsSigningKey for PrivateKey {
         )
         .await
         .context(SignSnafu)
-    }
-}
-
-impl HasPublicKey for PrivateKey {
-    fn public_key_jwk(&self) -> &jwk::PublicJwk {
-        &self.inner.jwk
     }
 }
