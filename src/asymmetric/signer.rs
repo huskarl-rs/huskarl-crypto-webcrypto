@@ -15,16 +15,16 @@
 //! - Asymmetric (`EdDSA`)
 //!   - `Ed25519` (aka `EdDSA`)
 
+use huskarl_core::{
+    crypto::signer::{AsymmetricJwsSigner, AsymmetricJwsSignerSelector, JwsSigner},
+    jwk::PublicJwk,
+};
 use serde::Serialize;
 use snafu::prelude::*;
 use std::borrow::Cow;
 use std::sync::Arc;
 
 use web_sys::CryptoKey;
-
-use huskarl_core::crypto::signer::{
-    AsymmetricJwsSigningKey, AsymmetricSigningKeyMetadata, SigningKeyMetadata,
-};
 
 use crate::{
     KeyUsage,
@@ -38,7 +38,7 @@ use crate::{
 struct PrivateKeyInner {
     crypto_key: CryptoKey,
     algorithm: AsymmetricAlgorithm,
-    key_metadata: AsymmetricSigningKeyMetadata,
+    public_jwk: PublicJwk,
 }
 
 /// A non-exportable asymmetric private key used to create JWS signatures.
@@ -267,13 +267,7 @@ impl PrivateKey {
             inner: Arc::new(PrivateKeyInner {
                 crypto_key: key_pair.get_private_key(),
                 algorithm,
-                key_metadata: AsymmetricSigningKeyMetadata {
-                    key_metadata: SigningKeyMetadata {
-                        jws_algorithm: algorithm.name().to_string(),
-                        key_id: public_key_jwk.kid.clone(),
-                    },
-                    public_key: public_key_jwk,
-                },
+                public_jwk: public_key_jwk,
             }),
         })
     }
@@ -305,16 +299,43 @@ impl huskarl_core::Error for SignError {
     }
 }
 
-impl AsymmetricJwsSigningKey for PrivateKey {
-    type Error = SignError;
+impl AsymmetricJwsSignerSelector for PrivateKey {
+    type AsymmetricSigner = Self;
 
-    fn asymmetric_key_metadata(
-        &self,
-    ) -> Cow<'_, huskarl_core::crypto::signer::AsymmetricSigningKeyMetadata> {
-        Cow::Borrowed(&self.inner.key_metadata)
+    fn select_asymmetric_signer(&self) -> Self::AsymmetricSigner {
+        self.clone()
     }
 
-    async fn sign_asymmetric_unchecked(&self, input: &[u8]) -> Result<Vec<u8>, Self::Error> {
+    fn select_asymmetric_signer_by_thumbprint(
+        &self,
+        thumbprint: &str,
+    ) -> Option<Self::AsymmetricSigner> {
+        if self.inner.public_jwk.thumbprint().as_deref() == Some(thumbprint) {
+            Some(self.clone())
+        } else {
+            None
+        }
+    }
+}
+
+impl AsymmetricJwsSigner for PrivateKey {
+    fn public_key_jwk(&self) -> Cow<'_, huskarl_core::jwk::PublicJwk> {
+        Cow::Borrowed(&self.inner.public_jwk)
+    }
+}
+
+impl JwsSigner for PrivateKey {
+    type Error = SignError;
+
+    fn jws_algorithm(&self) -> Cow<'_, str> {
+        Cow::Borrowed(self.inner.algorithm.name())
+    }
+
+    fn key_id(&self) -> Option<Cow<'_, str>> {
+        self.inner.public_jwk.kid.clone().map(Cow::Owned)
+    }
+
+    async fn sign(&self, input: &[u8]) -> Result<Vec<u8>, Self::Error> {
         let crypto = get_crypto().context(CryptoAbsentSnafu)?;
 
         sign_with_key(
