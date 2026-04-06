@@ -1,10 +1,13 @@
 use std::sync::Arc;
 
 use huskarl_core::{
-    crypto::verifier::{JwsVerifier, KeyMatch, KeyMatchStrength, VerifyError},
+    crypto::{
+        KeyMatchStrength,
+        verifier::{JwsVerifier, KeyMatch, VerifyError},
+    },
     jwk::{self, KeyOperation, KeyUse},
 };
-use snafu::{ResultExt as _, Snafu};
+use snafu::prelude::*;
 use web_sys::{Crypto, CryptoKey};
 
 use crate::{
