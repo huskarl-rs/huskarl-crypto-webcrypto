@@ -210,10 +210,7 @@ impl Key {
                     .ok()?,
                 ))
             }
-            jwk::PublicKey::Ec(_)
-            | jwk::PublicKey::Rsa(_)
-            | jwk::PublicKey::Okp(_)
-            | jwk::PublicKey::UnknownOrPrivate => None,
+            _ => None,
         }
     }
 

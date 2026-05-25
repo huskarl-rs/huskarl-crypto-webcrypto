@@ -16,7 +16,9 @@
 //!   - `Ed25519` (aka `EdDSA`)
 
 use huskarl_core::{
-    crypto::signer::{AsymmetricJwsSigner, AsymmetricJwsSignerSelector, JwsSigner},
+    crypto::signer::{
+        AsymmetricJwsSigner, AsymmetricJwsSignerSelector, JwsSigner, JwsSignerSelector,
+    },
     jwk::PublicJwk,
 };
 use serde::Serialize;
@@ -299,18 +301,17 @@ impl huskarl_core::Error for SignError {
     }
 }
 
-impl AsymmetricJwsSignerSelector for PrivateKey {
-    type AsymmetricSigner = Self;
+impl JwsSignerSelector for PrivateKey {
+    type Signer = Self;
 
-    fn select_asymmetric_signer(&self) -> Self::AsymmetricSigner {
+    fn select_signer(&self) -> Self::Signer {
         self.clone()
     }
+}
 
-    fn select_asymmetric_signer_by_thumbprint(
-        &self,
-        thumbprint: &str,
-    ) -> Option<Self::AsymmetricSigner> {
-        if self.inner.public_jwk.thumbprint().as_deref() == Some(thumbprint) {
+impl AsymmetricJwsSignerSelector for PrivateKey {
+    fn select_signer_by_thumbprint(&self, thumbprint: &str) -> Option<Self::Signer> {
+        if self.inner.public_jwk.thumbprint() == thumbprint {
             Some(self.clone())
         } else {
             None
